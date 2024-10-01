@@ -1,10 +1,6 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
-*/
 package main
 
-import "looperutil/cmd"
+import "github.com/gerrowadat/looperutil/cmd"
 
 func main() {
 	cmd.Execute()
