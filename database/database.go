@@ -173,10 +173,33 @@ func (s SlotName) String() string {
 	return ret
 }
 
+func (s SlotName) XmlString() string {
+	var ret string
+	ret += "<NAME>\n"
+	ret += fmt.Sprintf(" <C01>%v</C01>\n", s.C01)
+	ret += fmt.Sprintf(" <C02>%v</C02>\n", s.C02)
+	ret += fmt.Sprintf(" <C03>%v</C03>\n", s.C03)
+	ret += fmt.Sprintf(" <C04>%v</C04>\n", s.C04)
+	ret += fmt.Sprintf(" <C05>%v</C05>\n", s.C05)
+	ret += fmt.Sprintf(" <C06>%v</C06>\n", s.C06)
+	ret += fmt.Sprintf(" <C07>%v</C07>\n", s.C07)
+	ret += fmt.Sprintf(" <C08>%v</C08>\n", s.C08)
+	ret += fmt.Sprintf(" <C09>%v</C09>\n", s.C09)
+	ret += fmt.Sprintf(" <C10>%v</C10>\n", s.C10)
+	ret += fmt.Sprintf(" <C11>%v</C11>\n", s.C11)
+	ret += fmt.Sprintf(" <C12>%v</C12>\n", s.C12)
+	ret += "</NAME>"
+	return ret
+}
+
 func SlotNameFromString(str string) (*SlotName, error) {
 	ret := SlotName{}
-	if len(str) != 12 {
-		return nil, fmt.Errorf("memory slot name must be 12 characters long")
+	if len(str) > 12 {
+		return nil, fmt.Errorf("memory slot name must be <12 characters long")
+	}
+	// Pad shorter stirngs to 12.
+	if len(str) < 12 {
+		str = fmt.Sprintf("%-12s", str)
 	}
 	// Ugh.
 	ret.C01 = int(str[0])
