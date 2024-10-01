@@ -14,11 +14,24 @@ This utility mostly operates on the MEMORYX.RC0 and SYSTEMX.RC0 file you find on
 
 # Show Information about a Memory slot (slot 1 in this case).
 `looperutil ls 1`
+
+# Just spit out a <NAME> tag and contents for a given slot name.
+`looperutil xmlname "My Loop"`
+
 ```
 
 ```
 # Read-Write Stuff
 
+# This writes the same xml file in-place, unless you specify `--xml-output=` to another file.
+
 # Rename a memory slot
-`looperutil set name 1 myloop`
+`looperutil set 01 Name myloop`
+
+#  Set other various bits (the argument is the same as the 'ls' output keys)
+`looperutil set 01 One 1` # Set one-time mode for loop playback.
+`looperutil set 01 Tempo 1400`  # This is x10 for some reason.
+
+# Copy all Settings from slot 01 to slot 02
+`looperutil cp 01 02`
 ```
