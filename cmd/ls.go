@@ -38,7 +38,7 @@ func doLs(_ *cobra.Command, args []string) {
 	}
 	slot := db.GetMemorySlotByNumber(args[0])
 	if slot == nil {
-		fmt.Println("Memory slot not found: %v", args[0])
+		fmt.Printf("Memory slot not found: %v\n", args[0])
 		return
 	}
 	fmt.Print(slot.Describe())
