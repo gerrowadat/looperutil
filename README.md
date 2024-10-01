@@ -6,16 +6,19 @@ This utility mostly operates on the MEMORYX.RC0 and SYSTEMX.RC0 file you find on
 
 ### General Usage
 
-#### Read-only stuff.
+```
+# Read-only stuff.
 
-#### List all Memory slots. Default for --memory is ./MEMORY1.RC0
+# List all Memory slots. Default for --memory is ./MEMORY1.RC0
 `looperutil --memory=/path/to/MEMORY1.RC0 ls`
 
-#### Show Information about a Memory slot (slot 1 in this case).
+# Show Information about a Memory slot (slot 1 in this case).
 `looperutil ls 1`
+```
 
-#### Read-Write Stuff
+```
+# Read-Write Stuff
 
-#### Rename a memory slot
+# Rename a memory slot
 `looperutil set name 1 myloop`
-
+```
