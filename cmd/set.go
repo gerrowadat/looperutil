@@ -70,7 +70,7 @@ func doSet(_ *cobra.Command, args []string) {
 	if xmlOutput == "" {
 		fmt.Println(xml)
 	} else {
-		err = database.WriteXML(xmlOutput, xml)
+		err = db.WriteXML(xmlOutput, xml)
 		if err != nil {
 			fmt.Println(err)
 			return

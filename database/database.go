@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // struct representation of the XML Data.
@@ -108,7 +109,7 @@ func (d *Database) GetMemorySlotByNumber(num string) *MemorySlot {
 	return nil
 }
 
-func (d database) WriteXML(filename string, xml string) error {
+func (d Database) WriteXML(filename string, xml string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -203,26 +204,54 @@ func (m MemorySlot) Describe() string {
 }
 
 func (m MemorySlot) GetAttributeByName(name string) (int, error) {
-	// Check each of the structs for the attribute.
-	value := reflect.ValueOf(m.Master)
+	// The name is the struct name, then the name of the field in it (since some fields appear in multiple structs).
+	// e.g. "Master.Tempo" or "Rhythm.Level"
+	fragments := strings.Split(name, ".")
+	if len(fragments) != 2 {
+		return 0, fmt.Errorf("invalid attribute name: %v", name)
+	}
+	attr_name := fragments[1]
+	var value reflect.Value
+	switch fragments[0] {
+	case "Master":
+		value = reflect.ValueOf(m.Master)
+	case "Track1":
+		value = reflect.ValueOf(m.Track1)
+	case "Rhythm":
+		value = reflect.ValueOf(m.Rhythm)
+	default:
+		return 0, fmt.Errorf("invalid top-level sttribute (must be [Master|Track1|Rhythm]): %v", fragments[0])
+	}
+
 	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
+		if value.Type().Field(i).Name == attr_name {
 			return int(value.Field(i).Int()), nil
 		}
 	}
-	value = reflect.ValueOf(m.Track1)
-	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
-			return int(value.Field(i).Int()), nil
-		}
-	}
-	value = reflect.ValueOf(m.Rhythm)
-	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
-			return int(value.Field(i).Int()), nil
-		}
-	}
+
 	return 0, fmt.Errorf("attribute not found: %v", name)
+}
+
+func (m *MemorySlot) GetReflectedElementByName(name string) (string, reflect.Value, error) {
+	// Returns the reflected value of the attribute, and the string name of the attribute.
+	// i.e. ("Track1", <reflect.Value>, nil)
+
+	// The name is the struct name, then the name of the field in it (since some fields appear in multiple structs).
+	// e.g. "Master.Tempo" or "Rhythm.Level"
+	fragments := strings.Split(name, ".")
+	if len(fragments) != 2 {
+		return "", reflect.Value{}, fmt.Errorf("invalid attribute name: %v (must be [Master|Track1|Rhythm].Attribute (or Name))", name)
+	}
+	switch fragments[0] {
+	case "Master":
+		return fragments[0], reflect.ValueOf(&m.Master).Elem(), nil
+	case "Track1":
+		return fragments[0], reflect.ValueOf(&m.Track1).Elem(), nil
+	case "Rhythm":
+		return fragments[0], reflect.ValueOf(&m.Rhythm).Elem(), nil
+	default:
+		return "", reflect.Value{}, fmt.Errorf("invalid top-level attribute (must be [Master|Track1|Rhythm]): %v", fragments[0])
+	}
 }
 
 func (m *MemorySlot) SetAttributeByName(name string, new string) error {
@@ -230,24 +259,15 @@ func (m *MemorySlot) SetAttributeByName(name string, new string) error {
 	if err != nil {
 		return fmt.Errorf("value must be an integer: %v", new)
 	}
-	// Check each of the structs for the attribute.
-	value := reflect.ValueOf(&m.Master).Elem()
-	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
-			value.Field(i).SetInt(valueInt)
-			return nil
-		}
+	_, value, err := m.GetReflectedElementByName(name)
+	if err != nil {
+		return err
 	}
-	value = reflect.ValueOf(&m.Track1).Elem()
+
+	fragments := strings.Split(name, ".")
+
 	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
-			value.Field(i).SetInt(valueInt)
-			return nil
-		}
-	}
-	value = reflect.ValueOf(&m.Rhythm).Elem()
-	for i := 0; i < value.NumField(); i++ {
-		if value.Type().Field(i).Name == name {
+		if value.Type().Field(i).Name == fragments[1] {
 			value.Field(i).SetInt(valueInt)
 			return nil
 		}
