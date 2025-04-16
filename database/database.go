@@ -206,22 +206,12 @@ func (m MemorySlot) Describe() string {
 func (m MemorySlot) GetAttributeByName(name string) (int, error) {
 	// The name is the struct name, then the name of the field in it (since some fields appear in multiple structs).
 	// e.g. "Master.Tempo" or "Rhythm.Level"
+	_, value, err := m.GetReflectedElementByName(name)
+	if err != nil {
+		return 0, err
+	}
 	fragments := strings.Split(name, ".")
-	if len(fragments) != 2 {
-		return 0, fmt.Errorf("invalid attribute name: %v", name)
-	}
 	attr_name := fragments[1]
-	var value reflect.Value
-	switch fragments[0] {
-	case "Master":
-		value = reflect.ValueOf(m.Master)
-	case "Track1":
-		value = reflect.ValueOf(m.Track1)
-	case "Rhythm":
-		value = reflect.ValueOf(m.Rhythm)
-	default:
-		return 0, fmt.Errorf("invalid top-level sttribute (must be [Master|Track1|Rhythm]): %v", fragments[0])
-	}
 
 	for i := 0; i < value.NumField(); i++ {
 		if value.Type().Field(i).Name == attr_name {
