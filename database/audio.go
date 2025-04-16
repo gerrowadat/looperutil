@@ -68,9 +68,9 @@ func ConvertAudioFileToWav(inputFile string, outputFile string) error {
 	}
 	// Run ffmpeg to convert the audio file to WAV format
 	err = ffmpeg.Input(inputFile).Output(outputFile, ffmpeg.KwArgs{
-		"ar": "44100", // Set sample rate to 44100 Hz
-		"ac": "2",     // Set number of channels to 2 (stereo)
-		"f":  "wav",   // Set output format to WAV
+		"ar":  "44100",     // Set sample rate to 44100 Hz
+		"ac":  "2",         // Set number of channels to 2 (stereo)
+		"c:a": "pcm_f32le", // Set output format to WAV floating-point 32-bit little-endian
 	}).OverWriteOutput().Run()
 
 	if err != nil {
