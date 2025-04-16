@@ -48,7 +48,6 @@ func doSet(_ *cobra.Command, args []string) {
 
 	// 'Name' is a special case, because it's a string.
 	if args[1] == "Name" {
-		fmt.Printf("Name: [%v] -> [%v]\n", mem.Name.String(), args[2])
 		err := mem.SetNameFromString(args[2])
 		if err != nil {
 			fmt.Println(err)
