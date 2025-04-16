@@ -61,7 +61,7 @@ type Master struct {
 type Track1 struct {
 	Rev      int `xml:"Rev"`
 	PlyLvl   int `xml:"PlyLvl"`
-	Pen      int `xml:"Pen"`
+	Pan      int `xml:"Pan"`
 	One      int `xml:"One"`
 	StrtMod  int `xml:"StrtMod"`
 	StpMod   int `xml:"StpMod"`
@@ -99,13 +99,73 @@ type Rhythm struct {
 // Utility Functions for the above structs.
 
 // Get a memory slot by its number (zero-padded two-char string)
-func (d Database) GetMemorySlotByNumber(num string) *MemorySlot {
-	for _, mem := range d.Mem {
-		if mem.Number() == num {
-			return &mem
+func (d *Database) GetMemorySlotByNumber(num string) *MemorySlot {
+	for i := range d.Mem {
+		if d.Mem[i].Number() == num {
+			return &d.Mem[i]
 		}
 	}
 	return nil
+}
+
+func (d database) WriteXML(filename string, xml string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(xml)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d Database) ToXML() (string, error) {
+	ret := "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+	ret += "<database name=\"RC-5\" revision=\"0\">\n"
+
+	for _, mem := range d.Mem {
+		ret += fmt.Sprintf("<mem id=\"%v\">\n", mem.XmlId)
+		ret += fmt.Sprintf("%v\n", mem.Name.XmlString())
+		ret += fmt.Sprintf("%v\n", mem.Track1.XmlString())
+		ret += fmt.Sprintf("%v\n", mem.Master.XmlString())
+		ret += fmt.Sprintf("%v\n", mem.Rhythm.XmlString())
+		ret += "</mem>\n"
+	}
+	ret += "</database>"
+	return ret, nil
+}
+
+// The XML string representation of the master struct.
+func (m Master) XmlString() string {
+	ret := "<MASTER>\n"
+	value := reflect.ValueOf(m)
+	for i := 0; i < value.NumField(); i++ {
+		ret += fmt.Sprintf("\t<%v>%v</%v>\n", value.Type().Field(i).Name, value.Field(i).Int(), value.Type().Field(i).Name)
+	}
+	ret += "</MASTER>"
+	return ret
+}
+
+func (t Track1) XmlString() string {
+	ret := "<TRACK1>\n"
+	value := reflect.ValueOf(t)
+	for i := 0; i < value.NumField(); i++ {
+		ret += fmt.Sprintf("\t<%v>%v</%v>\n", value.Type().Field(i).Name, value.Field(i).Int(), value.Type().Field(i).Name)
+	}
+	ret += "</TRACK1>"
+	return ret
+}
+
+func (r Rhythm) XmlString() string {
+	ret := "<RHYTHM>\n"
+	value := reflect.ValueOf(r)
+	for i := 0; i < value.NumField(); i++ {
+		ret += fmt.Sprintf("\t<%v>%v</%v>\n", value.Type().Field(i).Name, value.Field(i).Int(), value.Type().Field(i).Name)
+	}
+	ret += "</RHYTHM>"
+	return ret
 }
 
 // The Memory Slot number, as a two-char padded string
@@ -142,6 +202,68 @@ func (m MemorySlot) Describe() string {
 	return ret
 }
 
+func (m MemorySlot) GetAttributeByName(name string) (int, error) {
+	// Check each of the structs for the attribute.
+	value := reflect.ValueOf(m.Master)
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			return int(value.Field(i).Int()), nil
+		}
+	}
+	value = reflect.ValueOf(m.Track1)
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			return int(value.Field(i).Int()), nil
+		}
+	}
+	value = reflect.ValueOf(m.Rhythm)
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			return int(value.Field(i).Int()), nil
+		}
+	}
+	return 0, fmt.Errorf("attribute not found: %v", name)
+}
+
+func (m *MemorySlot) SetAttributeByName(name string, new string) error {
+	valueInt, err := strconv.ParseInt(new, 10, 64)
+	if err != nil {
+		return fmt.Errorf("value must be an integer: %v", new)
+	}
+	// Check each of the structs for the attribute.
+	value := reflect.ValueOf(&m.Master).Elem()
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			value.Field(i).SetInt(valueInt)
+			return nil
+		}
+	}
+	value = reflect.ValueOf(&m.Track1).Elem()
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			value.Field(i).SetInt(valueInt)
+			return nil
+		}
+	}
+	value = reflect.ValueOf(&m.Rhythm).Elem()
+	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Name == name {
+			value.Field(i).SetInt(valueInt)
+			return nil
+		}
+	}
+	return fmt.Errorf("attribute not found: %v", name)
+}
+
+func (m *MemorySlot) SetNameFromString(str string) error {
+	new, err := SlotNameFromString(str)
+	if err != nil {
+		return err
+	}
+	m.Name = *new
+	return nil
+}
+
 func DescribeMemoryData(d interface{}) (string, error) {
 	var ret string
 	value := reflect.ValueOf(d)
@@ -174,20 +296,21 @@ func (s SlotName) String() string {
 }
 
 func (s SlotName) XmlString() string {
+	// The looper uses \v as an indenter, because of course.
 	var ret string
 	ret += "<NAME>\n"
-	ret += fmt.Sprintf(" <C01>%v</C01>\n", s.C01)
-	ret += fmt.Sprintf(" <C02>%v</C02>\n", s.C02)
-	ret += fmt.Sprintf(" <C03>%v</C03>\n", s.C03)
-	ret += fmt.Sprintf(" <C04>%v</C04>\n", s.C04)
-	ret += fmt.Sprintf(" <C05>%v</C05>\n", s.C05)
-	ret += fmt.Sprintf(" <C06>%v</C06>\n", s.C06)
-	ret += fmt.Sprintf(" <C07>%v</C07>\n", s.C07)
-	ret += fmt.Sprintf(" <C08>%v</C08>\n", s.C08)
-	ret += fmt.Sprintf(" <C09>%v</C09>\n", s.C09)
-	ret += fmt.Sprintf(" <C10>%v</C10>\n", s.C10)
-	ret += fmt.Sprintf(" <C11>%v</C11>\n", s.C11)
-	ret += fmt.Sprintf(" <C12>%v</C12>\n", s.C12)
+	ret += fmt.Sprintf("\t<C01>%v</C01>\n", s.C01)
+	ret += fmt.Sprintf("\t<C02>%v</C02>\n", s.C02)
+	ret += fmt.Sprintf("\t<C03>%v</C03>\n", s.C03)
+	ret += fmt.Sprintf("\t<C04>%v</C04>\n", s.C04)
+	ret += fmt.Sprintf("\t<C05>%v</C05>\n", s.C05)
+	ret += fmt.Sprintf("\t<C06>%v</C06>\n", s.C06)
+	ret += fmt.Sprintf("\t<C07>%v</C07>\n", s.C07)
+	ret += fmt.Sprintf("\t<C08>%v</C08>\n", s.C08)
+	ret += fmt.Sprintf("\t<C09>%v</C09>\n", s.C09)
+	ret += fmt.Sprintf("\t<C10>%v</C10>\n", s.C10)
+	ret += fmt.Sprintf("\t<C11>%v</C11>\n", s.C11)
+	ret += fmt.Sprintf("\t<C12>%v</C12>\n", s.C12)
 	ret += "</NAME>"
 	return ret
 }
