@@ -362,3 +362,10 @@ func LoadMemoryFile(filename string) (*Database, error) {
 	}
 	return &db, nil
 }
+
+func (m *MemorySlot) GetWavFileLocation(looper_root string) (string, string) {
+	// Return the directory to store the wav file, and its barename.
+	// The wav file name is the memory slot number, padded to 3 digits, with ".wav" appended.
+	slotnum := "0" + m.Number()
+	return fmt.Sprintf("%s/ROLAND/WAVE/%s_1/", looper_root, slotnum), fmt.Sprintf("%s.wav", slotnum)
+}
